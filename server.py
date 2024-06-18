@@ -7,7 +7,7 @@ import json
 def main():
 	global env
 	env = jinja2.Environment(
-		loader=jinja2.FileSystemLoader('../assets/Taktische-Zeichen'),
+		loader=jinja2.FileSystemLoader('./Taktische-Zeichen'),
 		autoescape=True,
 		trim_blocks=True,
 	)

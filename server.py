@@ -1,3 +1,4 @@
+import os
 import http.server
 import jinja2
 import urllib3
@@ -12,7 +13,13 @@ def main():
 		trim_blocks=True,
 	)
 
-	server = http.server.HTTPServer(('localhost', 9000), JinjaRequestHandler)
+	host = os.environ.get('SERVER_HOST', 'localhost')
+	port = os.environ.get('SERVER_PORT', 9000)
+
+	print(f'Starting server on {host}:{port}')
+	print()
+
+	server = http.server.HTTPServer((host, port), JinjaRequestHandler)
 	server.serve_forever()
 
 class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):

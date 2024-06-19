@@ -14,7 +14,7 @@ def main():
 	)
 
 	host = os.environ.get('SERVER_HOST', 'localhost')
-	port = os.environ.get('SERVER_PORT', 9000)
+	port = int(os.environ.get('SERVER_PORT', 9000))
 
 	print(f'Starting server on {host}:{port}')
 	print()

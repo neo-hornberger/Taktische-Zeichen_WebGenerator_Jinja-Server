@@ -76,6 +76,10 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 						template = env.get_template('templates/führungsstelle.j2t')
 					case 'building':
 						template = env.get_template('templates/gebäude.j2t')
+					case 'hazard':
+						template = env.get_template('templates/gefahr.j2t')
+					case 'device':
+						template = env.get_template('templates/gerät.j2t')
 					case 'person':
 						template = env.get_template('templates/person.j2t')
 					case 'post':

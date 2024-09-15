@@ -84,6 +84,8 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 						template = env.get_template('templates/person.j2t')
 					case 'post':
 						template = env.get_template('templates/stelle.j2t')
+					case 'communications_condition':
+						template = env.get_template('templates/fernmeldewesen_bedingung.j2t')
 				del query['template']
 			
 			if template is None:

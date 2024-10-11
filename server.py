@@ -147,7 +147,10 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 				self._cors_headers()
 				self.send_header('Content-type', 'application/json')
 				self.end_headers()
-				self.wfile.write(json.dumps(symbols).encode('utf-8'))
+				self.wfile.write(json.dumps({
+					'themes': list(symbol_themes.keys()),
+					'symbols': symbols,
+				}).encode('utf-8'))
 			
 			return
 

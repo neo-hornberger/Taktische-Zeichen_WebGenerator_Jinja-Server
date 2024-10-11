@@ -1,4 +1,5 @@
 import os
+import glob
 import http.server
 import jinja2
 import urllib3
@@ -29,8 +30,10 @@ def main():
 	symbols.sort()
 	
 	global symbol_themes
-	with open('./Taktische-Zeichen/themes/default.json') as f:
-		symbol_themes = json.load(f)
+	symbol_themes = {}
+	for theme in glob.glob('./Taktische-Zeichen/themes/*.json'):
+		with open(theme) as f:
+			symbol_themes[os.path.basename(theme)[:-5]] = json.load(f)
 
 	print(f'Starting server on {host}:{port}')
 	print()
@@ -118,7 +121,12 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 				symbol = query['symbol'][0]
 				if symbol in symbols:
 					try:
-						body = env.get_template(f'symbols/{symbol}').render(symbol_themes).encode('utf-8')
+						symbol_theme = query['theme'][0] if 'theme' in query else 'default'
+						if symbol_theme not in symbol_themes:
+							symbol_theme = 'default'
+						symbol_theme = symbol_themes[symbol_theme]
+
+						body = env.get_template(f'symbols/{symbol}').render(symbol_theme).encode('utf-8')
 
 						self.send_response(200)
 						self._cors_headers()

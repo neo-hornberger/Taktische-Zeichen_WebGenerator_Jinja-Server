@@ -32,8 +32,13 @@ def main():
 	global symbol_themes
 	symbol_themes = {}
 	for theme in glob.glob('./Taktische-Zeichen/themes/*.json'):
-		with open(theme) as f:
+		with open(theme, 'r') as f:
 			symbol_themes[os.path.basename(theme)[:-5]] = json.load(f)
+	
+	global metadata
+	metadata = {}
+	with open('metadata.json', 'r') as f:
+		metadata = json.load(f)
 
 	print(f'Starting server on {host}:{port}')
 	print()
@@ -152,6 +157,34 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 					'symbols': symbols,
 				}).encode('utf-8'))
 			
+			return
+		elif url.path == '/keywords':
+			self.send_response(200)
+			self._cors_headers()
+			self.send_header('Content-type', 'application/json')
+			self.end_headers()
+			self.wfile.write(json.dumps(list({
+				keyword
+				for m in metadata.values()
+				for keyword in m['keywords']
+			})).encode('utf-8'))
+			return
+		elif url.path == '/identify':
+			filtered_symbols = symbols
+			if 'filter' in query and len(query['filter']) > 0:
+				filtered_symbols = list(filter(
+					lambda sym: all([
+						keyword in metadata[sym[:-3]]['keywords']
+						for keyword in query['filter']
+					]),
+					filtered_symbols
+				))
+
+			self.send_response(200)
+			self._cors_headers()
+			self.send_header('Content-type', 'application/json')
+			self.end_headers()
+			self.wfile.write(json.dumps(filtered_symbols).encode('utf-8'))
 			return
 
 		self.send_response(400)

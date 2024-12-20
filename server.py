@@ -5,6 +5,9 @@ import jinja2
 import urllib3
 import urllib.parse as urlparse
 import json
+from cairosvg import svg2png
+from PIL import Image
+from io import BytesIO
 
 
 def main():
@@ -105,11 +108,7 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 				variables = { key: parseValue(value[0]) for key, value in query.items() }
 				body = template.render(variables).encode('utf-8')
 
-				self.send_response(200)
-				self._cors_headers()
-				self.send_header('Content-type', 'image/svg+xml')
-				self.end_headers()
-				self.wfile.write(body)
+				self.send_symbol(body, renderOptions(query))
 			except jinja2.exceptions.TemplateRuntimeError as e:
 				self.send_response(400)
 				self.send_header('Content-type', 'text/plain')
@@ -133,11 +132,7 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 
 						body = env.get_template(f'symbols/{symbol}').render(symbol_theme).encode('utf-8')
 
-						self.send_response(200)
-						self._cors_headers()
-						self.send_header('Content-type', 'image/svg+xml')
-						self.end_headers()
-						self.wfile.write(body)
+						self.send_symbol(body, renderOptions(query))
 					except jinja2.exceptions.TemplateRuntimeError as e:
 						self.send_response(400)
 						self.send_header('Content-type', 'text/plain')
@@ -190,6 +185,43 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 		self.send_response(400)
 		self.end_headers()
 	
+	def send_symbol(self, symbol, options):
+		if options['type'] == 'svg':
+			content_type = 'image/svg+xml'
+			body = symbol
+		elif options['type'] == 'png':
+			content_type = 'image/png'
+			body = svg2png(
+				symbol,
+				output_width=options['size'],
+				output_height=options['size'],
+			)
+		elif options['type'] == 'jpeg':
+			content_type = 'image/jpeg'
+			img_png = Image.open(BytesIO(svg2png(
+				symbol,
+				output_width=options['size'],
+				output_height=options['size'],
+			)))
+			img = Image.new('RGBA', img_png.size, 'WHITE')
+			img.paste(img_png, (0, 0), img_png)
+			body_jpeg = BytesIO()
+			img.convert('RGB').save(body_jpeg, 'JPEG')
+			body = body_jpeg.getvalue()
+		else:
+			self.send_response(400)
+			self.send_header('Content-type', 'text/plain')
+			self._cors_headers()
+			self.end_headers()
+			self.wfile.write(f"Invalid render type: {options['type']}".encode('utf-8'))
+			return
+
+		self.send_response(200)
+		self._cors_headers()
+		self.send_header('Content-type', content_type)
+		self.end_headers()
+		self.wfile.write(body)
+
 def parseValue(value):
 	if value == 'true':
 		return True
@@ -202,6 +234,18 @@ def parseValue(value):
 		pass
 	
 	return value
+
+def renderOptions(query):
+	options = {
+		'type': 'svg',
+		'size': 512,
+	}
+	
+	for opt in options.keys():
+		if f'render_{opt}' in query:
+			options[opt] = parseValue(query[f'render_{opt}'][0])
+
+	return options
 
 if __name__ == '__main__':
 	main()

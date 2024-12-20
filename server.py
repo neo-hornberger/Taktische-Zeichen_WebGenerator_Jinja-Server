@@ -111,7 +111,7 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 				self.send_symbol(body, renderOptions(query))
 			except jinja2.exceptions.TemplateRuntimeError as e:
 				self.send_response(400)
-				self.send_header('Content-type', 'text/plain')
+				self.send_header('Content-Type', 'text/plain')
 				self._cors_headers()
 				self.end_headers()
 				if isinstance(e, jinja2.exceptions.UndefinedError) and '[ERROR]' in e.message:
@@ -135,7 +135,7 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 						self.send_symbol(body, renderOptions(query))
 					except jinja2.exceptions.TemplateRuntimeError as e:
 						self.send_response(400)
-						self.send_header('Content-type', 'text/plain')
+						self.send_header('Content-Type', 'text/plain')
 						self._cors_headers()
 						self.end_headers()
 						if isinstance(e, jinja2.exceptions.UndefinedError) and '[ERROR]' in e.message:
@@ -145,7 +145,7 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 			else:
 				self.send_response(200)
 				self._cors_headers()
-				self.send_header('Content-type', 'application/json')
+				self.send_header('Content-Type', 'application/json')
 				self.end_headers()
 				self.wfile.write(json.dumps({
 					'themes': list(symbol_themes.keys()),
@@ -156,7 +156,7 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 		elif url.path == '/keywords':
 			self.send_response(200)
 			self._cors_headers()
-			self.send_header('Content-type', 'application/json')
+			self.send_header('Content-Type', 'application/json')
 			self.end_headers()
 			self.wfile.write(json.dumps(list({
 				keyword
@@ -177,9 +177,30 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 
 			self.send_response(200)
 			self._cors_headers()
-			self.send_header('Content-type', 'application/json')
+			self.send_header('Content-Type', 'application/json')
 			self.end_headers()
 			self.wfile.write(json.dumps(filtered_symbols).encode('utf-8'))
+			return
+
+		self.send_response(400)
+		self.end_headers()
+	
+	def do_POST(self):
+		url = urllib3.util.parse_url(self.path)
+		query = urlparse.parse_qs(url.query)
+
+		print(query)
+
+		if url.path == '/convert':
+			if self.headers.get_content_type() != 'image/svg+xml':
+				self.send_response(400)
+				self.send_header('Content-Type', 'text/plain')
+				self._cors_headers()
+				self.end_headers()
+				self.wfile.write('Content type must equal to image/svg+xml'.encode('utf-8'))
+				return
+
+			self.send_symbol(self.rfile.read(int(self.headers.get('Content-Length'))), renderOptions(query))
 			return
 
 		self.send_response(400)
@@ -204,13 +225,13 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 				output_height=options['size'],
 			)))
 			img = Image.new('RGBA', img_png.size, 'WHITE')
-			img.paste(img_png, (0, 0), img_png)
+			img.paste(img_png, mask=img_png)
 			body_jpeg = BytesIO()
 			img.convert('RGB').save(body_jpeg, 'JPEG')
 			body = body_jpeg.getvalue()
 		else:
 			self.send_response(400)
-			self.send_header('Content-type', 'text/plain')
+			self.send_header('Content-Type', 'text/plain')
 			self._cors_headers()
 			self.end_headers()
 			self.wfile.write(f"Invalid render type: {options['type']}".encode('utf-8'))
@@ -218,7 +239,7 @@ class JinjaRequestHandler(http.server.BaseHTTPRequestHandler):
 
 		self.send_response(200)
 		self._cors_headers()
-		self.send_header('Content-type', content_type)
+		self.send_header('Content-Type', content_type)
 		self.end_headers()
 		self.wfile.write(body)
 

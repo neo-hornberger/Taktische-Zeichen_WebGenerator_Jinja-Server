@@ -1,4 +1,0 @@
-jinja2
-urllib3
-cairosvg
-Pillow
